@@ -1,6 +1,7 @@
 import { Fragment, useState, useCallback } from 'react';
 
-import { debounce } from '../util/debounce';
+import { debounce } from '../utils/debounce';
+import { throttle, badThrottle } from '../utils/throttle';
 import MatchResults from './MatchResults';
 
 const API_URL = 'https://jsonplaceholder.typicode.com/comments';
@@ -31,7 +32,7 @@ const Dashboard2 = () => {
     const query = createSearchQuery(queryParams);
 
     const URL = `${API_URL}${query}`;
-    console.log('Making API request', { queryParams });
+    console.log('Calling', URL);
 
     const resp = await fetch(URL);
     const data = await resp.json();
@@ -54,7 +55,8 @@ const Dashboard2 = () => {
   }
 
   // Wrap inside a useCallback so that we don't always get a new copy of the debounced function which will nullify the functionality essentially.
-  const optimisedFetchResults = useCallback(debounce(fetchResults, 500), []);
+  const debouncedFetchResults = useCallback(debounce(fetchResults, 500), []);
+  // const throttledFetchResults = useCallback(throttle(fetchResults, 1000), []);
 
   const searchBoxChangeHandler = async (e, id) => {
     setSearchTerm(e.target.value);
@@ -62,7 +64,8 @@ const Dashboard2 = () => {
     let queryParams = {};
     queryParams[id] = e.target.value;
 
-    optimisedFetchResults(queryParams);
+    debouncedFetchResults(queryParams);
+    // throttledFetchResults(queryParams);
   };
 
   return (
@@ -70,7 +73,9 @@ const Dashboard2 = () => {
       <div className='container mt-5'>
         <div className='row'>
           <div className='col md-6 m-auto'>
-            <h3 className='text-center mb-4'>Debouncing in React Apps</h3>
+            <h3 className='text-center mb-4'>
+              Debouncing and Throttling with React
+            </h3>
 
             <div className='form-group'>
               <input
