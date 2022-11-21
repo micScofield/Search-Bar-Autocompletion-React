@@ -1,15 +1,14 @@
-import { Fragment } from 'react'
+import { Fragment } from 'react';
 
-import Dashboard from './components/Dashboard'
-// import './App.css';
-import './bootstrap.min.css'
+import Dashboard from './components/Dashboard';
+import './bootstrap.min.css';
 
-const App = props => {
+const App = () => {
   return (
     <Fragment>
       <Dashboard />
     </Fragment>
-  )
-}
+  );
+};
 
-export default App
+export default App;

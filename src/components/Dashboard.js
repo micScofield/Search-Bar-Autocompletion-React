@@ -1,95 +1,97 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useState, useCallback } from 'react';
 
-import { debounce } from '../util/utilities'
-import MatchResults from './MatchResults'
+import { debounce } from '../util/debounce';
+import MatchResults from './MatchResults';
 
-const Dashboard = () => {
+const API_URL = 'https://jsonplaceholder.typicode.com/comments';
+/*
+[{
+    "postId": 1,
+    "id": 1,
+    "name": "id labore ex et quam laborum",
+    "email": "Eliseo@gardner.biz",
+    "body": "laudantium enim quasi est quidem magnam voluptate ipsam eos\ntempora quo necessitatibus\ndolor quam autem quasi\nreiciendis et nam sapiente accusantium"
+  }]
+*/
 
-    const [matches, setMatches] = useState([])
-    const [showMatches, setShowMatches] = useState(true)
+const Dashboard2 = () => {
+  const [matches, setMatches] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showMatches, setShowMatches] = useState(false);
 
-    const [showDescription, setShowDescription] = useState(false)
-    const [searchResult, setSearchResult] = useState('')
+  async function fetchResults(queryParams) {
+    /**
+     * @param queryParam {object}
+     * {
+     *  param1: searchTerm,
+     *  param2: searchTerm2,
+     * }
+     */
 
-    // const [searchText, setSearchText] = useState('')
+    const query = createSearchQuery(queryParams);
 
-    // search states from json data and filter
-    async function filterSearch(inputStr) {
-        setShowMatches(true)
-        let matches
+    const URL = `${API_URL}${query}`;
+    console.log('Making API request', { queryParams });
 
-        // do not show any result if input string in empty
-        if (inputStr.trim().length === 0) {
-            matches = []
-        } else {
-            console.log('making api call', inputStr)
-
-            const res = await fetch('../data/states.json')
-            const states = await res.json()
-
-            const regex = new RegExp(`^${inputStr}`, 'gi') // gi flag removes the case sensitiveness
-
-            // get matches to current text input
-            matches = states.filter(state => {
-                return state.name.match(regex) || state.abbr.match(regex)
-            })
-        }
-
-        setMatches(matches)
+    const resp = await fetch(URL);
+    const data = await resp.json();
+    console.log(data);
+    if (data) {
+      setMatches(data);
+      setShowMatches(true);
     }
+  }
 
-    const debounceRequest = debounce(filterSearch, 500)
+  function createSearchQuery(obj) {
+    const entries = Object.entries(obj);
+    if (entries.length === 0) return '';
 
-    const clickHandler = e => {
-        // search for match details using this name and store results in some state which we can render on page
-        // for now lets just render name
-        setShowDescription(true)
-        setShowMatches(false)
-        setSearchResult(e.target.parentElement.dataset.name)
-
-        // set input value to ''
-        document.getElementById('search').value = ''
+    let str = '?';
+    for (let [key, value] of entries) {
+      str += `${key}=${value}`;
     }
+    return str;
+  }
 
-    // Not working
-    // const changeHandler = e => {
-    //     setSearchText(e.target.value)
-    //     const fn = debounce(filterSearch, 500, e.target.value)
-    //     fn()
-    // }
+  // Wrap inside a useCallback so that we don't always get a new copy of the debounced function which will nullify the functionality essentially.
+  const optimisedFetchResults = useCallback(debounce(fetchResults, 500), []);
 
-    return <Fragment>
-        <div className="container mt-5">
-            <div className="row">
-                <div className="col md-6 m-auto">
+  const searchBoxChangeHandler = async (e, id) => {
+    setSearchTerm(e.target.value);
 
-                    <h3 className="text-center mb-4">
-                        <i className="fas fa-flag-usa"></i> State Capital Lookup
-                    </h3>
+    let queryParams = {};
+    queryParams[id] = e.target.value;
 
-                    <div className="form-group">
-                        <input 
-                            type="text" 
-                            id="search" 
-                            // value={searchText} 
-                            className="form-control form-control-lg" 
-                            placeholder="Enter state name or abbreviation" 
-                            onKeyUp={debounceRequest} 
-                            // onChange={e => changeHandler(e)} 
-                        />
-                    </div>
+    optimisedFetchResults(queryParams);
+  };
 
-                    {showMatches && matches.length !== 0 && <MatchResults matches={matches} clickHandler={clickHandler} />}
+  return (
+    <Fragment>
+      <div className='container mt-5'>
+        <div className='row'>
+          <div className='col md-6 m-auto'>
+            <h3 className='text-center mb-4'>Debouncing in React Apps</h3>
 
-                </div>
+            <div className='form-group'>
+              <input
+                type='text'
+                id='search'
+                value={searchTerm}
+                className='form-control form-control-lg'
+                placeholder='Search'
+                data-id='postId'
+                onChange={(e) => searchBoxChangeHandler(e, 'postId')}
+              />
             </div>
 
-            {showDescription && <div className='card card-body mb-1 mt-5'>
-                You searched for {searchResult}
-            </div>}
-
+            {showMatches && matches && matches.length !== 0 && (
+              <MatchResults matches={matches} clickHandler={() => {}} />
+            )}
+          </div>
         </div>
+      </div>
     </Fragment>
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard2;
